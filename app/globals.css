@@ -219,6 +219,26 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+.login-form .test-account-button {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.login-form .test-account-button:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
+.test-account-copy {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .app-shell {
   display: grid;
   min-height: 100vh;
@@ -1609,6 +1629,146 @@ textarea:focus {
 
 .review-modal footer .secondary { border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink); }
 
+.onboarding-tour {
+  position: fixed;
+  z-index: 90;
+  right: 28px;
+  bottom: 28px;
+  width: min(430px, calc(100vw - 56px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 28px 80px rgba(18, 29, 26, 0.24);
+  animation: modal-in 360ms var(--ease) both;
+}
+
+.onboarding-tour header,
+.onboarding-tour footer {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+}
+
+.onboarding-tour header { border-bottom: 1px solid var(--line); }
+.onboarding-tour footer { border-top: 1px solid var(--line); }
+
+.onboarding-progress {
+  display: grid;
+  width: 142px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.onboarding-progress i {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background-color 260ms var(--ease), transform 260ms var(--ease);
+}
+
+.onboarding-progress i.active {
+  background: var(--accent);
+  transform: scaleY(1.2);
+}
+
+.onboarding-skip,
+.onboarding-tour footer .secondary {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.onboarding-skip:hover,
+.onboarding-tour footer .secondary:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.onboarding-content {
+  display: grid;
+  gap: 16px;
+  min-height: 252px;
+  padding: 26px 28px 24px;
+  animation: fade-up 300ms var(--ease) both;
+}
+
+.onboarding-content h2 {
+  margin: 0;
+  font-size: 27px;
+  letter-spacing: 0;
+}
+
+.onboarding-content > p:not(.eyebrow) {
+  margin: -6px 0 2px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.onboarding-content ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-content li {
+  position: relative;
+  padding: 11px 12px 11px 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.onboarding-content li::before {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  content: "";
+}
+
+.onboarding-next {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent);
+  color: white;
+  font-weight: 760;
+}
+
+.onboarding-next:hover {
+  background: var(--accent-dark);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+:root[data-theme="dark"] .onboarding-next { color: #10231d; }
+
+.tour-target {
+  position: relative;
+  z-index: 91;
+  border-color: color-mix(in srgb, var(--accent) 66%, var(--line)) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent), 0 10px 24px color-mix(in srgb, var(--accent) 15%, transparent);
+  animation: tour-pulse 1.8s var(--ease) infinite;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1714,6 +1874,11 @@ textarea:focus {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes tour-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent), 0 10px 24px color-mix(in srgb, var(--accent) 15%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 9%, transparent), 0 12px 28px color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+
 .editor-modal { animation-duration: 360ms; }
 .editor-backdrop { animation-duration: 260ms; }
 .task,
@@ -1748,6 +1913,17 @@ textarea:focus {
   .login-panel,
   .primary-panel {
     padding: 20px;
+  }
+
+  .onboarding-tour {
+    right: 16px;
+    bottom: 16px;
+    width: calc(100vw - 32px);
+  }
+
+  .onboarding-content {
+    min-height: 0;
+    padding: 22px 20px;
   }
 
   .topbar {

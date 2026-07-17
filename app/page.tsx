@@ -45,6 +45,7 @@ type UserData = {
   tasks: Task[];
   reviews: Review[];
   areas?: Area[];
+  onboardingCompleted?: boolean;
 };
 
 type Draft = {
@@ -69,6 +70,7 @@ type ChildDraft = {
 const storeKey = "itodo.local.v2";
 const legacyStoreKey = "itodo.local.v1";
 const themeKey = "itodo.theme.v1";
+const demoAccountName = "体验账号";
 const today = new Date();
 const todayKey = toKey(today);
 
@@ -77,36 +79,6 @@ const defaultAreas: Area[] = [
   { id: "life", name: "生活", color: "#22c55e" },
   { id: "personal", name: "个人", color: "#a855f7" },
 ];
-
-const seedTasks: Task[] = (() => {
-  const month = makeTask({
-    title: "完成 7 月个人系统整理",
-    startDate: toKey(startOfMonth(today)),
-    endDate: toKey(addDays(startOfMonth(today), 29)),
-    priority: "P2",
-    area: "personal",
-    done: false,
-  });
-  const week = makeTask({
-    title: "整理预算、订阅与运动安排",
-    startDate: toKey(startOfWeek(today)),
-    endDate: toKey(addDays(startOfWeek(today), 6)),
-    priority: "P1",
-    area: "work",
-    parentId: month.id,
-    done: false,
-  });
-  const day = makeTask({
-    title: "完成产品需求梳理",
-    startDate: todayKey,
-    endDate: todayKey,
-    priority: "P1",
-    area: "work",
-    parentId: week.id,
-    done: false,
-  });
-  return [day, week, month];
-})();
 
 function makeTask(input: {
   title: string;
@@ -132,6 +104,79 @@ function makeTask(input: {
     done: input.done,
     createdAt: new Date().toISOString(),
   };
+}
+
+function createTemplateTasks(): Task[] {
+  const weekStart = toKey(startOfWeek(today));
+  const weekEnd = toKey(addDays(startOfWeek(today), 6));
+  const project = makeTask({
+    title: "本周重点",
+    notes: "一个带子计划的示例项目。",
+    startDate: weekStart,
+    endDate: weekEnd,
+    priority: "P1",
+    area: "personal",
+    done: false,
+  });
+  const projectChild = makeTask({
+    title: "列出三件要事",
+    notes: "示例子计划。",
+    startDate: todayKey,
+    endDate: todayKey,
+    priority: "P1",
+    area: "personal",
+    parentId: project.id,
+    weight: 50,
+    done: false,
+  });
+  const focusTask = makeTask({
+    title: "阅读 20 分钟",
+    notes: "示例今日计划。",
+    startDate: todayKey,
+    endDate: todayKey,
+    priority: "P2",
+    area: "study",
+    done: false,
+  });
+  const weeklyTask = makeTask({
+    title: "运动一次",
+    notes: "示例计划。",
+    startDate: toKey(addDays(today, 1)),
+    endDate: toKey(addDays(today, 1)),
+    priority: "P3",
+    area: "life",
+    done: false,
+  });
+  return [project, projectChild, focusTask, weeklyTask];
+}
+
+function createTemplateReviews(): Review[] {
+  const currentWeek = toKey(startOfWeek(today));
+  const previousWeek = toKey(addDays(startOfWeek(today), -7));
+  return [
+    {
+      id: crypto.randomUUID(),
+      period: "week",
+      anchor: currentWeek,
+      wins: "完成了本周重点梳理，并留出了一段专注阅读时间。",
+      blocks: "运动安排还没有落实到具体时段。",
+      next: "先给运动计划确定一个固定时间。",
+      createdAt: new Date().toISOString(),
+      doneCount: 2,
+      totalCount: 3,
+    },
+    {
+      id: crypto.randomUUID(),
+      period: "week",
+      anchor: previousWeek,
+      wins: "完成预算整理，清理了不再需要的订阅。",
+      blocks: "计划安排得过满，留白时间不足。",
+      next: "下周每天只保留一个最重要目标。",
+      createdAt: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      doneCount: 3,
+      totalCount: 4,
+    },
+  ];
 }
 
 function emptyDraft(area = defaultAreas[0].id, date = todayKey): Draft {
@@ -299,6 +344,9 @@ export default function Home() {
   const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem(themeKey) as Theme | null;
@@ -310,10 +358,10 @@ export default function Home() {
   useEffect(() => {
     if (!activeUser) return;
     const all = loadStore();
-    all[activeUser] = { tasks, reviews, areas };
+    all[activeUser] = { tasks, reviews, areas, onboardingCompleted };
     localStorage.setItem(storeKey, JSON.stringify(all));
     localStorage.setItem("itodo.lastUser", activeUser);
-  }, [activeUser, tasks, reviews, areas]);
+  }, [activeUser, tasks, reviews, areas, onboardingCompleted]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -330,7 +378,12 @@ export default function Home() {
     const cleanName = name.trim();
     if (!cleanName) return;
     const all = loadStore();
-    const data = all[cleanName] || { tasks: seedTasks, reviews: [] };
+    const existingData = all[cleanName];
+    const isDemoAccount = cleanName === demoAccountName;
+    const isNewUser = !existingData || isDemoAccount;
+    const data = isDemoAccount
+      ? { tasks: createTemplateTasks(), reviews: createTemplateReviews(), areas: defaultAreas, onboardingCompleted: false }
+      : existingData || { tasks: createTemplateTasks(), reviews: [], areas: defaultAreas, onboardingCompleted: false };
     const nextTasks = data.tasks.map(normalizeTask);
     const nextAreas = normalizeAreas(nextTasks, data.areas);
     setActiveUser(cleanName);
@@ -339,6 +392,22 @@ export default function Home() {
     setReviews(data.reviews);
     setAreas(nextAreas);
     setDraft(emptyDraft(nextAreas[0]?.id || "work", todayKey));
+    setOnboardingCompleted(isNewUser ? false : data.onboardingCompleted ?? true);
+    setOnboardingStep(0);
+    setOnboardingOpen(isNewUser);
+  }
+
+  function finishOnboarding() {
+    setOnboardingCompleted(true);
+    setOnboardingOpen(false);
+  }
+
+  function changeOnboardingStep(nextStep: number) {
+    const step = onboardingSteps[nextStep];
+    if (!step) return;
+    setOnboardingStep(nextStep);
+    setView(step.view);
+    setAnchor(today);
   }
 
   function openNewPlan(date = toKey(anchor)) {
@@ -609,6 +678,8 @@ export default function Home() {
             <label htmlFor="username">用户名</label>
             <input id="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="例如 martin" />
             <button type="submit">登录本地账号</button>
+            <button type="button" className="test-account-button" onClick={() => signIn(demoAccountName)}>使用测试账号</button>
+            <p className="test-account-copy">每次登录测试账号都会重置示例计划与引导。</p>
           </form>
         </section>
       </main>
@@ -625,7 +696,7 @@ export default function Home() {
             <small>{activeUser}</small>
           </div>
         </div>
-        <button className="new-plan-button" onClick={() => openNewPlan()}>
+        <button className={onboardingOpen && onboardingSteps[onboardingStep].target === "new-plan" ? "new-plan-button tour-target" : "new-plan-button"} onClick={() => openNewPlan()}>
           + 新增计划
         </button>
         <nav className="nav-list" aria-label="主导航">
@@ -636,7 +707,7 @@ export default function Home() {
             ["calendar", "日历"],
             ["review", "复盘"],
           ].map(([key, label]) => (
-            <button key={key} className={view === key ? "active" : ""} onClick={() => setView(key as View)}>
+            <button key={key} className={`${view === key ? "active" : ""}${onboardingOpen && onboardingSteps[onboardingStep].target === key ? " tour-target" : ""}`} onClick={() => setView(key as View)}>
               {label}
             </button>
           ))}
@@ -754,6 +825,7 @@ export default function Home() {
           </div>
         ) : null}
         {reviewEditorOpen ? <ReviewEditorModal draft={reviewDraft} setDraft={setReviewDraft} onSave={addReview} onClose={() => { setEditingReviewId(""); setReviewDraft({ wins: "", blocks: "", next: "" }); setReviewEditorOpen(false); }} /> : null}
+        {onboardingOpen ? <OnboardingModal step={onboardingStep} onStepChange={changeOnboardingStep} onFinish={finishOnboarding} /> : null}
       </section>
     </main>
   );
@@ -800,6 +872,79 @@ function nextLabel(view: View) {
 
 function themeLabel(theme: Theme) {
   return { light: "白", mint: "绿", dark: "暗" }[theme];
+}
+
+const onboardingSteps = [
+  {
+    view: "today" as View,
+    target: "new-plan",
+    title: "从今日开始",
+    description: "这里汇集今天的计划。先试试左侧的“新增计划”，为一件想完成的事设定日期和优先级。",
+    points: ["示例计划可以直接修改或删除", "完成后，计划会自然移动到列表下方"],
+  },
+  {
+    view: "week" as View,
+    target: "week",
+    title: "在本周安排时间",
+    description: "本周将同一批计划按每天展开。计划的日期范围覆盖哪一天，就会出现在哪一天。",
+    points: ["切换周次时会明确标识是否为当前周", "同一天的未完成计划会按优先级排序"],
+  },
+  {
+    view: "month" as View,
+    target: "month",
+    title: "在本月总览项目",
+    description: "本月将计划整理成表格。点击计划名称能打开详情，查看子计划、日期与完成进度。",
+    points: ["领域和优先级便于快速扫描", "带子计划的项目会按子计划占比汇总完成度"],
+  },
+  {
+    view: "calendar" as View,
+    target: "calendar",
+    title: "用日历定位计划",
+    description: "日历让你快速看到计划落在哪一天。点击计划查看详情，点击日期即可前往当天的计划列表。",
+    points: ["不同领域使用不同颜色区分", "长时间范围的计划会在覆盖日期中出现"],
+  },
+  {
+    view: "review" as View,
+    target: "review",
+    title: "每周花几分钟复盘",
+    description: "复盘页汇总本周完成情况，也能记录成果、阻碍和下一步，历史记录保留最近两周。",
+    points: ["日历同样可以从侧边栏随时查看", "主题与所有计划内容都会自动保存在本地"],
+  },
+];
+
+function OnboardingModal({
+  step,
+  onStepChange,
+  onFinish,
+}: {
+  step: number;
+  onStepChange: (step: number) => void;
+  onFinish: () => void;
+}) {
+  const current = onboardingSteps[step];
+  const isLast = step === onboardingSteps.length - 1;
+  return (
+    <aside className="onboarding-tour" role="dialog" aria-modal="false" aria-labelledby="onboarding-title">
+      <header>
+        <div className="onboarding-progress" aria-label={`第 ${step + 1} 步，共 ${onboardingSteps.length} 步`}>
+          {onboardingSteps.map((item, index) => <i className={index <= step ? "active" : ""} key={item.title} />)}
+        </div>
+        <button type="button" className="onboarding-skip" onClick={onFinish}>跳过</button>
+      </header>
+      <div className="onboarding-content">
+        <p className="eyebrow">新手指南 · {step + 1}/{onboardingSteps.length}</p>
+        <h2 id="onboarding-title">{current.title}</h2>
+        <p>{current.description}</p>
+        <ul>
+          {current.points.map((point) => <li key={point}>{point}</li>)}
+        </ul>
+      </div>
+      <footer>
+        {step > 0 ? <button type="button" className="secondary" onClick={() => onStepChange(step - 1)}>上一步</button> : <span />}
+        <button type="button" className="onboarding-next" onClick={() => isLast ? onFinish() : onStepChange(step + 1)}>{isLast ? "完成" : "下一步"}</button>
+      </footer>
+    </aside>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
