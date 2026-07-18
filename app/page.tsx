@@ -3,9 +3,9 @@
 import type { CSSProperties, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-type View = "today" | "week" | "month" | "calendar" | "review";
+type View = "today" | "week" | "month" | "calendar" | "review" | "settings";
 type Priority = "P1" | "P2" | "P3";
-type Theme = "light" | "dark" | "mint";
+type Theme = "light" | "dark" | "mint" | "custom";
 
 type Area = {
   id: string;
@@ -48,6 +48,13 @@ type UserData = {
   onboardingCompleted?: boolean;
 };
 
+type CustomTheme = {
+  accent: string;
+  background: string;
+  surface: string;
+  density: "comfortable" | "compact";
+};
+
 type Draft = {
   title: string;
   startDate: string;
@@ -55,6 +62,7 @@ type Draft = {
   priority: Priority;
   area: string;
   notes: string;
+  weight?: number;
   children: ChildDraft[];
 };
 
@@ -70,15 +78,24 @@ type ChildDraft = {
 const storeKey = "itodo.local.v2";
 const legacyStoreKey = "itodo.local.v1";
 const themeKey = "itodo.theme.v1";
+const customThemeKey = "itodo.custom-theme.v1";
 const demoAccountName = "体验账号";
 const today = new Date();
 const todayKey = toKey(today);
 
 const defaultAreas: Area[] = [
+  { id: "work-type", name: "工作", color: "#f97316" },
   { id: "study", name: "学习", color: "#3b82f6" },
   { id: "life", name: "生活", color: "#22c55e" },
   { id: "personal", name: "个人", color: "#a855f7" },
 ];
+
+const defaultCustomTheme: CustomTheme = {
+  accent: "#24a47a",
+  background: "#f7f9fb",
+  surface: "#ffffff",
+  density: "comfortable",
+};
 
 function makeTask(input: {
   title: string;
@@ -107,47 +124,114 @@ function makeTask(input: {
 }
 
 function createTemplateTasks(): Task[] {
-  const weekStart = toKey(startOfWeek(today));
-  const weekEnd = toKey(addDays(startOfWeek(today), 6));
+  const tomorrowKey = toKey(addDays(today, 1));
+  const dayAfterTomorrowKey = toKey(addDays(today, 2));
+  const thirdDayKey = toKey(addDays(today, 3));
+  const fourthDayKey = toKey(addDays(today, 4));
   const project = makeTask({
-    title: "本周重点",
-    notes: "一个带子计划的示例项目。",
-    startDate: weekStart,
-    endDate: weekEnd,
+    title: "准备需求评审",
+    notes: "示例工作项目。",
+    startDate: todayKey,
+    endDate: fourthDayKey,
     priority: "P1",
-    area: "personal",
+    area: "work-type",
     done: false,
   });
   const projectChild = makeTask({
-    title: "列出三件要事",
-    notes: "示例子计划。",
+    title: "整理评审问题",
+    notes: "示例工作子计划。",
     startDate: todayKey,
-    endDate: todayKey,
+    endDate: tomorrowKey,
     priority: "P1",
-    area: "personal",
+    area: "work-type",
     parentId: project.id,
     weight: 50,
     done: false,
   });
   const focusTask = makeTask({
-    title: "阅读 20 分钟",
-    notes: "示例今日计划。",
+    title: "英语阅读 20 分钟",
+    notes: "示例学习计划。",
     startDate: todayKey,
     endDate: todayKey,
     priority: "P2",
     area: "study",
+    done: true,
+  });
+  const agendaTask = makeTask({
+    title: "梳理会议议程",
+    notes: "示例工作计划。",
+    startDate: todayKey,
+    endDate: todayKey,
+    priority: "P1",
+    area: "work-type",
+    done: false,
+  });
+  const personalTodayTask = makeTask({
+    title: "确认本周安排",
+    notes: "示例个人计划。",
+    startDate: todayKey,
+    endDate: todayKey,
+    priority: "P2",
+    area: "personal",
+    done: false,
+  });
+  const followUpTask = makeTask({
+    title: "同步评审结论",
+    notes: "示例工作子计划。",
+    startDate: tomorrowKey,
+    endDate: tomorrowKey,
+    priority: "P2",
+    area: "work-type",
+    parentId: project.id,
+    weight: 50,
     done: false,
   });
   const weeklyTask = makeTask({
-    title: "运动一次",
-    notes: "示例计划。",
+    title: "下班后慢跑 30 分钟",
+    notes: "示例生活计划。",
     startDate: toKey(addDays(today, 1)),
     endDate: toKey(addDays(today, 1)),
     priority: "P3",
     area: "life",
     done: false,
   });
-  return [project, projectChild, focusTask, weeklyTask];
+  const personalTask = makeTask({
+    title: "整理周末采购清单",
+    notes: "示例个人计划。",
+    startDate: fourthDayKey,
+    endDate: fourthDayKey,
+    priority: "P3",
+    area: "personal",
+    done: false,
+  });
+  const reportTask = makeTask({
+    title: "完成周报草稿",
+    notes: "示例工作计划。",
+    startDate: thirdDayKey,
+    endDate: thirdDayKey,
+    priority: "P2",
+    area: "work-type",
+    done: false,
+  });
+  const notesTask = makeTask({
+    title: "整理课程笔记",
+    notes: "示例学习计划。",
+    startDate: dayAfterTomorrowKey,
+    endDate: dayAfterTomorrowKey,
+    priority: "P2",
+    area: "study",
+    done: false,
+  });
+  const appointmentTask = makeTask({
+    title: "预约牙医检查",
+    notes: "示例生活计划。",
+    startDate: fourthDayKey,
+    endDate: fourthDayKey,
+    priority: "P3",
+    area: "life",
+    done: false,
+  });
+  return [project, projectChild, followUpTask, focusTask, agendaTask, personalTodayTask, weeklyTask, personalTask, reportTask, notesTask, appointmentTask];
 }
 
 function createTemplateReviews(): Review[] {
@@ -257,9 +341,18 @@ function overlaps(task: Task, start: string, end: string) {
 function taskProgress(task: Task, allTasks: Task[]) {
   const children = allTasks.filter((item) => item.parentId === task.id);
   if (!children.length) return task.done ? 100 : 0;
-  const total = Math.max(1, children.reduce((sum, child) => sum + (child.weight || 1), 0));
-  const completed = children.filter((child) => child.done).reduce((sum, child) => sum + (child.weight || 1), 0);
+  const total = children.reduce((sum, child) => sum + (child.weight ?? 0), 0);
+  if (!total) return 0;
+  const completed = children.filter((child) => child.done).reduce((sum, child) => sum + (child.weight ?? 0), 0);
   return Math.round((completed / total) * 100);
+}
+
+function normalizeOnlyChildWeights(items: Task[]) {
+  const childCounts = new Map<string, number>();
+  items.forEach((task) => {
+    if (task.parentId) childCounts.set(task.parentId, (childCounts.get(task.parentId) || 0) + 1);
+  });
+  return items.map((task) => task.parentId && childCounts.get(task.parentId) === 1 ? { ...task, weight: 100 } : task);
 }
 
 function boundRange(start: string, end: string, minimum: string, maximum: string) {
@@ -344,6 +437,7 @@ export default function Home() {
   const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
+  const [customTheme, setCustomTheme] = useState<CustomTheme>(defaultCustomTheme);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
@@ -351,6 +445,12 @@ export default function Home() {
   useEffect(() => {
     const savedTheme = localStorage.getItem(themeKey) as Theme | null;
     if (savedTheme) setTheme(savedTheme);
+    try {
+      const savedCustomTheme = localStorage.getItem(customThemeKey);
+      if (savedCustomTheme) setCustomTheme({ ...defaultCustomTheme, ...JSON.parse(savedCustomTheme) });
+    } catch {
+      setCustomTheme(defaultCustomTheme);
+    }
     const last = localStorage.getItem("itodo.lastUser") || "";
     if (last) signIn(last);
   }, []);
@@ -365,8 +465,25 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.density = customTheme.density;
+    const rootStyle = document.documentElement.style;
+    ["--accent", "--accent-dark", "--accent-soft", "--bg", "--surface", "--surface-soft"].forEach((name) => rootStyle.removeProperty(name));
+    if (theme === "custom") {
+      rootStyle.setProperty("--accent", customTheme.accent);
+      rootStyle.setProperty("--accent-dark", customTheme.accent);
+      rootStyle.setProperty("--accent-soft", `color-mix(in srgb, ${customTheme.accent} 12%, ${customTheme.surface})`);
+      rootStyle.setProperty("--bg", customTheme.background);
+      rootStyle.setProperty("--surface", customTheme.surface);
+      rootStyle.setProperty("--surface-soft", `color-mix(in srgb, ${customTheme.surface} 88%, ${customTheme.background})`);
+    }
     localStorage.setItem(themeKey, theme);
-  }, [theme]);
+    localStorage.setItem(customThemeKey, JSON.stringify(customTheme));
+  }, [theme, customTheme]);
+
+  function updateCustomTheme(changes: Partial<CustomTheme>) {
+    setCustomTheme((current) => ({ ...current, ...changes }));
+    setTheme("custom");
+  }
 
   useEffect(() => {
     if (!notice) return;
@@ -425,6 +542,7 @@ export default function Home() {
       priority: task.priority,
       area: task.area,
       notes: task.notes,
+      weight: task.weight ?? 100,
       children: [],
     });
     setEditorOpen(true);
@@ -432,6 +550,11 @@ export default function Home() {
 
   function editChildFromParent(task: Task) {
     if (task.parentId) setReturnToId(task.parentId);
+    editPlan(task);
+  }
+
+  function editParentFromChild(task: Task) {
+    setReturnToId("");
     editPlan(task);
   }
 
@@ -481,20 +604,20 @@ export default function Home() {
     );
     if (editingId) {
       setTasks((items) =>
-        [
+        normalizeOnlyChildWeights([
           ...items.map((task) =>
             task.id === editingId
-              ? { ...task, title: draft.title.trim(), startDate, endDate, priority: draft.priority, area: draft.area, notes: draft.notes.trim() }
+              ? { ...task, title: draft.title.trim(), startDate, endDate, priority: draft.priority, area: draft.area, notes: draft.notes.trim(), weight: parent ? draft.weight ?? 0 : task.weight }
               : task.parentId === editingId
                 ? { ...task, ...boundRange(task.startDate, task.endDate, startDate, endDate) }
                 : task,
           ),
           ...childTasks,
-        ],
+        ]),
       );
       setNotice("计划已更新");
     } else {
-      setTasks((items) => [
+      setTasks((items) => normalizeOnlyChildWeights([
         {
           ...makeTask({
           title: draft.title.trim(),
@@ -509,7 +632,7 @@ export default function Home() {
         },
         ...childTasks,
         ...items,
-      ]);
+      ]));
       setNotice("计划已添加");
     }
     const returnTask = returnToId ? tasks.find((task) => task.id === returnToId) : undefined;
@@ -539,7 +662,7 @@ export default function Home() {
     };
     setAreas((items) => [...items, nextArea]);
     setDraft((current) => ({ ...current, area: nextArea.id }));
-    setNotice("领域已添加");
+    setNotice("类型已添加");
   }
 
   function toggleTask(id: string) {
@@ -628,7 +751,7 @@ export default function Home() {
   function moveAnchor(direction: -1 | 1) {
     if (view === "today") setAnchor((current) => addDays(current, direction));
     else if (view === "week" || view === "review") setAnchor((current) => addDays(current, direction * 7));
-    else setAnchor((current) => addMonths(current, direction));
+    else if (view !== "settings") setAnchor((current) => addMonths(current, direction));
   }
 
   const weekDays = useMemo(() => {
@@ -654,9 +777,14 @@ export default function Home() {
     return { start: toKey(first), end: toKey(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)) };
   }, [anchor, view, weekDays]);
 
+  const parentPlanIds = useMemo(
+    () => new Set(tasks.flatMap((task) => task.parentId ? [task.parentId] : [])),
+    [tasks],
+  );
+
   const visibleTasks = useMemo(
-    () => sortPlans(tasks.filter((task) => overlaps(task, range.start, range.end))),
-    [tasks, range],
+    () => sortPlans(tasks.filter((task) => (view === "today" || view === "week" ? !parentPlanIds.has(task.id) : !task.parentId) && overlaps(task, range.start, range.end))),
+    [tasks, range, view, parentPlanIds],
   );
 
   if (!activeUser) {
@@ -706,15 +834,16 @@ export default function Home() {
             ["month", "本月"],
             ["calendar", "日历"],
             ["review", "复盘"],
+            ["settings", "设置"],
           ].map(([key, label]) => (
-            <button key={key} className={`${view === key ? "active" : ""}${onboardingOpen && onboardingSteps[onboardingStep].target === key ? " tour-target" : ""}`} onClick={() => setView(key as View)}>
+            <button key={key} className={`${view === key ? "active" : ""}${onboardingOpen && onboardingSteps[onboardingStep].target === key ? " tour-target" : ""}`} onClick={() => { const nextView = key as View; setView(nextView); if (nextView === "calendar") setAnchor(today); }}>
               {label}
             </button>
           ))}
         </nav>
         <div className="sidebar-footer">
           <div className="theme-switcher" aria-label="主题切换">
-            {(["light", "mint", "dark"] as Theme[]).map((item) => (
+            {(["light", "mint", "dark", "custom"] as Theme[]).map((item) => (
               <button key={item} className={theme === item ? "selected" : ""} onClick={() => setTheme(item)}>
                 {themeLabel(item)}
               </button>
@@ -740,16 +869,18 @@ export default function Home() {
             <p className="eyebrow">{headerDateLabel(view, anchor)}</p>
             <h1>{viewTitle(view, anchor)}</h1>
           </div>
-          <div className="date-controls">
+          {view !== "settings" ? <div className="date-controls">
             <button onClick={() => moveAnchor(-1)}>{previousLabel(view)}</button>
             <button onClick={() => setAnchor(today)}>今天</button>
             <button onClick={() => moveAnchor(1)}>{nextLabel(view)}</button>
-          </div>
+          </div> : null}
         </header>
 
         <section className="single-panel">
           <div className="primary-panel">
-            {view === "calendar" ? (
+            {view === "settings" ? (
+              <SettingsPanel theme={theme} customTheme={customTheme} onThemeChange={setTheme} onCustomThemeChange={updateCustomTheme} />
+            ) : view === "calendar" ? (
               <Calendar
                 days={monthDays}
                 anchor={anchor}
@@ -764,7 +895,7 @@ export default function Home() {
             ) : view === "review" ? (
               <ReviewPanel
                 tasks={visibleTasks}
-                allTasks={tasks}
+                allTasks={tasks.filter((task) => !task.parentId)}
                 areas={areas}
                 reviews={reviews}
                 draft={reviewDraft}
@@ -820,6 +951,7 @@ export default function Home() {
                 onCancel={closeEditor}
                 onAddArea={addArea}
                 onEditChild={editChildFromParent}
+                onEditParent={editParentFromChild}
               />
             </div>
           </div>
@@ -840,6 +972,7 @@ function viewTitle(view: View, anchor: Date) {
     month: currentMonth ? "本月计划" : `${monthTitle(anchor)} 计划`,
     calendar: "日历视图",
     review: "复盘",
+    settings: "设置",
   }[view];
 }
 
@@ -849,6 +982,7 @@ function dayListTitle(date: Date) {
 
 function headerDateLabel(view: View, anchor: Date) {
   if (view === "month" || view === "calendar") return monthTitle(anchor);
+  if (view === "settings") return "个性化工作区";
   if (view === "today") return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(anchor);
   if (view === "week") return toKey(startOfWeek(anchor)) === toKey(startOfWeek(today)) ? "当前周" : `${formatMonthDate(toKey(startOfWeek(anchor)))} - ${formatMonthDate(toKey(addDays(startOfWeek(anchor), 6)))}`;
   return "定期回顾";
@@ -871,7 +1005,62 @@ function nextLabel(view: View) {
 }
 
 function themeLabel(theme: Theme) {
-  return { light: "白", mint: "绿", dark: "暗" }[theme];
+  return { light: "白", mint: "绿", dark: "暗", custom: "自" }[theme];
+}
+
+function SettingsPanel({
+  theme,
+  customTheme,
+  onThemeChange,
+  onCustomThemeChange,
+}: {
+  theme: Theme;
+  customTheme: CustomTheme;
+  onThemeChange: (theme: Theme) => void;
+  onCustomThemeChange: (changes: Partial<CustomTheme>) => void;
+}) {
+  const presets: { id: Theme; title: string; description: string; colors: string[] }[] = [
+    { id: "light", title: "白色", description: "清爽、专注", colors: ["#f7f9fb", "#ffffff", "#24a47a"] },
+    { id: "mint", title: "薄荷", description: "柔和、自然", colors: ["#f2faf7", "#ffffff", "#18a87c"] },
+    { id: "dark", title: "深色", description: "低光环境", colors: ["#111817", "#17211f", "#54d6a8"] },
+  ];
+  return (
+    <section className="settings-panel">
+      <div className="settings-intro">
+        <div>
+          <p className="eyebrow">外观与偏好</p>
+          <h2>让 iTodo 更像你的工作台</h2>
+          <p>主题和显示密度会自动保存在当前浏览器。</p>
+        </div>
+      </div>
+      <section className="settings-section">
+        <div className="settings-section-head"><div><h3>主题预设</h3><p>一键切换常用配色。</p></div></div>
+        <div className="theme-presets">
+          {presets.map((preset) => (
+            <button type="button" className={theme === preset.id ? "theme-preset selected" : "theme-preset"} key={preset.id} onClick={() => onThemeChange(preset.id)}>
+              <span className="preset-swatch" aria-hidden="true">{preset.colors.map((color) => <i key={color} style={{ background: color }} />)}</span>
+              <strong>{preset.title}</strong>
+              <small>{preset.description}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="settings-section">
+        <div className="settings-section-head"><div><h3>自定义颜色</h3><p>修改任意颜色会自动切换到自定义主题。</p></div><span className={theme === "custom" ? "custom-status active" : "custom-status"}>{theme === "custom" ? "已启用" : "未启用"}</span></div>
+        <div className="color-controls">
+          <label><span>强调色</span><div><input type="color" value={customTheme.accent} onChange={(event) => onCustomThemeChange({ accent: event.target.value })} /><code>{customTheme.accent.toUpperCase()}</code></div></label>
+          <label><span>页面背景</span><div><input type="color" value={customTheme.background} onChange={(event) => onCustomThemeChange({ background: event.target.value })} /><code>{customTheme.background.toUpperCase()}</code></div></label>
+          <label><span>卡片背景</span><div><input type="color" value={customTheme.surface} onChange={(event) => onCustomThemeChange({ surface: event.target.value })} /><code>{customTheme.surface.toUpperCase()}</code></div></label>
+        </div>
+      </section>
+      <section className="settings-section density-section">
+        <div className="settings-section-head"><div><h3>显示密度</h3><p>调整计划列表和看板的呼吸感。</p></div></div>
+        <div className="density-options">
+          {(["comfortable", "compact"] as const).map((density) => <button type="button" className={customTheme.density === density ? "selected" : ""} key={density} onClick={() => onCustomThemeChange({ density })}><strong>{density === "comfortable" ? "舒适" : "紧凑"}</strong><small>{density === "comfortable" ? "更宽松的间距" : "在一屏显示更多内容"}</small></button>)}
+        </div>
+      </section>
+    </section>
+  );
 }
 
 const onboardingSteps = [
@@ -894,14 +1083,14 @@ const onboardingSteps = [
     target: "month",
     title: "在本月总览项目",
     description: "本月将计划整理成表格。点击计划名称能打开详情，查看子计划、日期与完成进度。",
-    points: ["领域和优先级便于快速扫描", "带子计划的项目会按子计划占比汇总完成度"],
+    points: ["类型和优先级便于快速扫描", "带子计划的项目会按子计划占比汇总完成度"],
   },
   {
     view: "calendar" as View,
     target: "calendar",
     title: "用日历定位计划",
     description: "日历让你快速看到计划落在哪一天。点击计划查看详情，点击日期即可前往当天的计划列表。",
-    points: ["不同领域使用不同颜色区分", "长时间范围的计划会在覆盖日期中出现"],
+    points: ["不同类型使用不同颜色区分", "长时间范围的计划会在覆盖日期中出现"],
   },
   {
     view: "review" as View,
@@ -969,6 +1158,7 @@ function PlanForm({
   onCancel,
   onAddArea,
   onEditChild,
+  onEditParent,
 }: {
   draft: Draft;
   editing: boolean;
@@ -982,12 +1172,14 @@ function PlanForm({
   onCancel: () => void;
   onAddArea: (name: string) => void;
   onEditChild: (task: Task) => void;
+  onEditParent: (task: Task) => void;
 }) {
   const [expandedChildId, setExpandedChildId] = useState("");
   const childPlans = currentTask
     ? sortPlans(tasks.filter((task) => task.parentId === currentTask.id))
     : [];
   const isChildPlan = Boolean(currentTask?.parentId);
+  const parentPlan = currentTask?.parentId ? tasks.find((task) => task.id === currentTask.parentId) : undefined;
   const newChild = (): ChildDraft => ({
     title: "",
     startDate: draft.startDate,
@@ -1010,11 +1202,13 @@ function PlanForm({
               <span>计划</span>
               <input autoFocus value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="计划名称" />
             </label>
+            {isChildPlan && parentPlan ? <div className="parent-plan-reference"><div><span>从属父计划</span><strong>{parentPlan.title}</strong></div><button type="button" onClick={() => onEditParent(parentPlan)}>编辑父计划</button></div> : null}
             <div className="plan-controls">
               <label>日期<div className="form-row"><input type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value, endDate: draft.endDate < event.target.value ? event.target.value : draft.endDate })} /><input type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} /></div></label>
               {!isChildPlan ? <label>优先级<select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value as Priority })}><option>P1</option><option>P2</option><option>P3</option></select></label> : null}
-              {!isChildPlan ? <label>领域<select value={draft.area} onChange={(event) => setDraft({ ...draft, area: event.target.value })}><option value="">未设置</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label> : null}
-              {!isChildPlan ? <details className="area-adder"><summary>新增领域</summary><div className="area-manager"><input value={newAreaName} onChange={(event) => setNewAreaName(event.target.value)} placeholder="例如：学习" /><button type="button" onClick={() => { onAddArea(newAreaName); setNewAreaName(""); }}>添加</button></div></details> : null}
+              {!isChildPlan ? <label>类型<select value={draft.area} onChange={(event) => setDraft({ ...draft, area: event.target.value })}><option value="">未设置</option>{areas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label> : null}
+              {isChildPlan ? <label>占比<div className="weight-input"><input type="number" min="0" max="100" value={draft.weight ?? ""} onChange={(event) => setDraft({ ...draft, weight: event.target.value === "" ? 0 : Math.max(0, Number(event.target.value)) })} /><span>%</span></div></label> : null}
+              {!isChildPlan ? <details className="area-adder"><summary>新增类型</summary><div className="area-manager"><input value={newAreaName} onChange={(event) => setNewAreaName(event.target.value)} placeholder="例如：工作" /><button type="button" onClick={() => { onAddArea(newAreaName); setNewAreaName(""); }}>添加</button></div></details> : null}
             </div>
             <details className="description-field">
               <summary>描述 <em>可选</em></summary>
@@ -1086,7 +1280,7 @@ function MonthBoard({
       </div>
       <div className="month-table" role="table" aria-label="本月计划看板">
         <div className="month-table-head" role="row">
-          <span>名称</span><span>领域</span><span>计划日期</span><span>优先级</span><span>完成度</span>
+          <span>名称</span><span>类型</span><span>计划日期</span><span>优先级</span><span>完成度</span>
         </div>
         {tasks.length ? tasks.map((task) => {
           const progress = taskProgress(task, allTasks);
@@ -1204,14 +1398,15 @@ function TaskCard({
   showTime?: boolean;
 }) {
   const children = sortPlans(allTasks.filter((item) => item.parentId === task.id));
+  const parentPlan = task.parentId ? allTasks.find((item) => item.id === task.parentId) : undefined;
   const color = areaColor(areas, task.area);
 
   return (
     <article className={task.done ? "task done" : "task"} style={{ "--area-color": color } as CSSProperties}>
       <button className="check" aria-label={task.done ? "标记未完成" : "标记完成"} onClick={() => onToggle(task.id)} />
       <div>
-        <button className="task-title" onClick={() => onEdit(task)}><h3>{task.title}</h3></button>
-        {showTime ? <p>{formatShort(task.startDate)} - {formatShort(task.endDate)}</p> : children.length ? <p>{children.length} 个子计划</p> : null}
+        <button className="task-title" onClick={() => onEdit(task)}><h3>{task.title}{parentPlan ? <small className="parent-plan-label">（{parentPlan.title}）</small> : null}</h3></button>
+        {showTime ? <p>{formatShort(task.startDate)} - {formatShort(task.endDate)}</p> : !parentPlan && children.length ? <p>{children.length} 个子计划</p> : null}
         {showTime ? <div className="task-progress"><i style={{ width: `${taskProgress(task, allTasks)}%` }} /><span>{taskProgress(task, allTasks)}%</span></div> : null}
       </div>
       <span className={`priority-mark ${task.priority.toLowerCase()}`} aria-label={`${task.priority} 优先级`}>{task.priority}</span>
@@ -1241,6 +1436,7 @@ function WeekTimeline({
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
 }) {
+  const parentPlanIds = new Set(tasks.flatMap((task) => task.parentId ? [task.parentId] : []));
   useEffect(() => {
     if (!days.some((day) => toKey(day) === todayKey)) return;
     const timer = window.setTimeout(() => {
@@ -1253,7 +1449,7 @@ function WeekTimeline({
     <section className="week-timeline">
       {days.map((day) => {
         const key = toKey(day);
-        const dayTasks = sortPlans(tasks.filter((task) => overlaps(task, key, key)));
+        const dayTasks = sortPlans(tasks.filter((task) => !parentPlanIds.has(task.id) && overlaps(task, key, key)));
         return (
           <article className="timeline-day" id={key === todayKey ? "week-today" : undefined} key={key}>
             <header>
@@ -1299,6 +1495,15 @@ function Calendar({
   onEdit: (task: Task) => void;
   onSelectDate: (date: Date) => void;
 }) {
+  const currentWeekStart = toKey(startOfWeek(today));
+  useEffect(() => {
+    if (!days.some((day) => toKey(day) === currentWeekStart)) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("calendar-current-week")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [days, currentWeekStart]);
+
   return (
     <section className="calendar-shell">
       <div className="calendar-grid">
@@ -1307,11 +1512,11 @@ function Calendar({
         ))}
         {days.map((day) => {
           const key = toKey(day);
-          const dayTasks = sortPlans(tasks.filter((task) => overlaps(task, key, key)));
+          const dayTasks = sortPlans(tasks.filter((task) => !task.parentId && overlaps(task, key, key)));
           const faded = day.getMonth() !== anchor.getMonth();
           const isToday = key === todayKey;
           return (
-            <article className={["calendar-day", faded ? "muted" : "", isToday ? "current" : ""].join(" ")} key={key}>
+            <article id={key === currentWeekStart ? "calendar-current-week" : undefined} className={["calendar-day", faded ? "muted" : "", isToday ? "current" : ""].join(" ")} key={key}>
               <button className="day-number" onClick={() => onSelectDate(day)}>{day.getDate()}</button>
               <div className="calendar-events">
                 {dayTasks.slice(0, 4).map((task) => (
@@ -1331,6 +1536,169 @@ function Calendar({
         })}
       </div>
     </section>
+  );
+}
+
+type ReviewShareData = {
+  completion: number;
+  completed: number;
+  total: number;
+  weekStart: string;
+  completedTasks: string[];
+  wins: string;
+  blocks: string;
+  next: string;
+  focusTasks: string[];
+};
+
+function createReviewShareImage(data: ReviewShareData) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  const width = canvas.width;
+  const accent = "#24a47a";
+  const ink = "#17211f";
+  const muted = "#687a74";
+  const line = "#dfe9e5";
+
+  context.fillStyle = "#f4faf7";
+  context.fillRect(0, 0, width, canvas.height);
+  context.fillStyle = "#ffffff";
+  context.fillRect(54, 54, width - 108, canvas.height - 108);
+  context.strokeStyle = line;
+  context.lineWidth = 2;
+  context.strokeRect(54, 54, width - 108, canvas.height - 108);
+
+  const drawWrapped = (text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines = 3) => {
+    const characters = text || "未记录";
+    const lines: string[] = [];
+    let current = "";
+    for (const character of characters) {
+      if (context.measureText(current + character).width > maxWidth && current) {
+        lines.push(current);
+        current = character;
+        if (lines.length === maxLines) break;
+      } else current += character;
+    }
+    if (current && lines.length < maxLines) lines.push(current);
+    lines.slice(0, maxLines).forEach((item, index) => context.fillText(item, x, y + index * lineHeight));
+  };
+
+  context.fillStyle = accent;
+  context.font = "700 24px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("iTodo", 104, 130);
+  context.fillStyle = muted;
+  context.font = "600 20px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("WEEKLY REVIEW", 104, 166);
+  context.fillStyle = ink;
+  context.font = "700 54px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("本周复盘", 104, 246);
+  context.fillStyle = muted;
+  context.font = "500 24px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText(`${formatShort(data.weekStart)} 所在周`, 104, 286);
+
+  context.fillStyle = "#e8f8f2";
+  context.beginPath();
+  context.arc(810, 238, 118, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = accent;
+  context.lineWidth = 16;
+  context.beginPath();
+  context.arc(810, 238, 94, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (data.completion / 100));
+  context.stroke();
+  context.fillStyle = ink;
+  context.font = "700 50px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.textAlign = "center";
+  context.fillText(`${data.completion}%`, 810, 252);
+  context.fillStyle = muted;
+  context.font = "600 18px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("完成率", 810, 284);
+  context.textAlign = "left";
+
+  const metricY = 366;
+  [
+    ["已完成", `${data.completed}`],
+    ["计划数", `${data.total}`],
+    ["待推进", `${Math.max(0, data.total - data.completed)}`],
+  ].forEach(([label, value], index) => {
+    const x = 104 + index * 290;
+    context.fillStyle = "#f8fbfa";
+    context.fillRect(x, metricY, 252, 134);
+    context.fillStyle = muted;
+    context.font = "600 20px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+    context.fillText(label, x + 24, metricY + 42);
+    context.fillStyle = ink;
+    context.font = "700 42px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+    context.fillText(value, x + 24, metricY + 96);
+  });
+
+  context.fillStyle = ink;
+  context.font = "700 24px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("已完成任务", 104, 554);
+  const completedTasks = data.completedTasks.length ? data.completedTasks.slice(0, 4) : ["本周还没有完成任务"];
+  completedTasks.forEach((task, index) => {
+    const x = 104 + (index % 2) * 430;
+    const y = 582 + Math.floor(index / 2) * 50;
+    context.fillStyle = "#f1faf6";
+    context.fillRect(x, y, 400, 36);
+    context.fillStyle = accent;
+    context.beginPath();
+    context.arc(x + 17, y + 18, 5, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = ink;
+    context.font = "600 18px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+    drawWrapped(task, x + 32, y + 24, 350, 24, 1);
+  });
+
+  const sections = [
+    ["本期亮点", data.wins],
+    ["未达成与原因", data.blocks],
+    ["下周焦点", data.next || data.focusTasks.join("、")],
+  ];
+  sections.forEach(([title, content], index) => {
+    const y = 746 + index * 128;
+    context.fillStyle = accent;
+    context.fillRect(104, y - 20, 5, 68);
+    context.fillStyle = ink;
+    context.font = "700 24px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+    context.fillText(title, 132, y);
+    context.fillStyle = muted;
+    context.font = "500 22px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+    drawWrapped(content, 132, y + 34, 790, 28, 2);
+  });
+
+  context.strokeStyle = line;
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(104, 1165);
+  context.lineTo(976, 1165);
+  context.stroke();
+  context.fillStyle = muted;
+  context.font = "500 18px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+  context.fillText("把计划拆成能推进的子计划", 104, 1215);
+  context.textAlign = "right";
+  context.fillText("itodo.local", 976, 1215);
+  context.textAlign = "left";
+  return canvas.toDataURL("image/png");
+}
+
+function ReviewShareModal({ image, onClose }: { image: string; onClose: () => void }) {
+  const downloadImage = () => {
+    const link = document.createElement("a");
+    link.href = image;
+    link.download = `itodo-weekly-review-${todayKey}.png`;
+    link.click();
+  };
+  return (
+    <div className="review-share-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="review-share-modal" role="dialog" aria-modal="true" aria-label="本周复盘分享图" onMouseDown={(event) => event.stopPropagation()}>
+        <header><div><span>本周复盘</span><h2>分享图已生成</h2></div><button type="button" className="close-editor" onClick={onClose} aria-label="关闭">×</button></header>
+        <img src={image} alt="本周复盘总结分享图" />
+        <footer><button type="button" className="secondary" onClick={onClose}>返回</button><button type="button" onClick={downloadImage}>下载 PNG</button></footer>
+      </section>
+    </div>
   );
 }
 
@@ -1357,7 +1725,9 @@ function ReviewPanel({
   onEditReview: (review: Review) => void;
   onDeleteReview: (id: string) => void;
 }) {
+  const [shareImage, setShareImage] = useState("");
   const recentReviews = reviews.filter((review) => review.period === "week").slice(0, 2);
+  const savedCurrentReview = reviews.find((review) => review.period === "week" && review.anchor === toKey(startOfWeek(today)));
   const completed = tasks.filter((task) => task.done);
   const open = tasks.filter((task) => !task.done);
   const total = tasks.length || 1;
@@ -1379,6 +1749,20 @@ function ReviewPanel({
     };
   });
   const peak = Math.max(...weeklyDone.map((item) => item.total), 1);
+  const generateShareImage = () => {
+    const image = createReviewShareImage({
+      completion,
+      completed: completed.length,
+      total: tasks.length,
+      weekStart: toKey(startOfWeek(today)),
+      completedTasks: completed.slice(0, 4).map((task) => task.title),
+      wins: draft.wins || savedCurrentReview?.wins || "",
+      blocks: draft.blocks || savedCurrentReview?.blocks || "",
+      next: draft.next || savedCurrentReview?.next || "",
+      focusTasks: open.slice(0, 3).map((task) => task.title),
+    });
+    if (image) setShareImage(image);
+  };
 
   return (
     <section className="review-layout">
@@ -1414,9 +1798,9 @@ function ReviewPanel({
           </div>
         </div>
         <div className="distribution">
-          <h3>领域分布</h3>
+          <h3>类型分布</h3>
           {areaRows.length === 0 ? (
-            <p className="empty small">暂无领域数据。</p>
+            <p className="empty small">暂无类型数据。</p>
           ) : (
             areaRows.map(([area, count]) => (
               <div className="distribution-row" key={area} style={{ "--area-color": areaColor(areas, area) } as CSSProperties}>
@@ -1438,6 +1822,7 @@ function ReviewPanel({
         <label>下一周期焦点<textarea value={draft.next} onChange={(event) => setDraft({ ...draft, next: event.target.value })} placeholder="只写最重要的一到三件事。" /></label>
         <div className="review-actions">
           <button onClick={() => addReview("week")}>保存周复盘</button>
+          <button className="share-review" onClick={generateShareImage}>生成分享图</button>
         </div>
         <div className="review-history">
           <div className="panel-heading">
@@ -1463,6 +1848,7 @@ function ReviewPanel({
           )}
         </div>
       </div>
+      {shareImage ? <ReviewShareModal image={shareImage} onClose={() => setShareImage("")} /> : null}
     </section>
   );
 }

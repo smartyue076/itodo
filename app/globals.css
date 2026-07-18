@@ -225,6 +225,18 @@ textarea:focus {
   color: var(--ink);
 }
 
+.review-actions .share-review {
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.review-actions .share-review:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
 .login-form .test-account-button:hover {
   border-color: var(--line-strong);
   background: var(--accent-soft);
@@ -367,7 +379,7 @@ textarea:focus {
 
 .theme-switcher {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   margin-bottom: 14px;
   padding: 4px;
@@ -657,6 +669,13 @@ textarea:focus {
   margin: 0;
   font-size: 16px;
   font-weight: 650;
+}
+
+.task h3 .parent-plan-label {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .task-title {
@@ -1080,6 +1099,24 @@ textarea:focus {
 .title-field { gap: 10px; }
 
 .title-field input { height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--ink); font-size: 26px; font-weight: 720; }
+
+.parent-plan-reference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parent-plan-reference > div { display: grid; gap: 3px; }
+.parent-plan-reference strong { color: var(--ink); font-size: 13px; }
+.parent-plan-reference button { min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 700; }
+.parent-plan-reference button:hover { border-color: var(--accent); color: var(--accent-dark); }
 
 .editor-sidebar { display: grid; align-content: center; justify-content: center; gap: 20px; padding: 32px 28px; border-left: 1px solid var(--line); background: var(--surface-soft); }
 
@@ -1629,6 +1666,63 @@ textarea:focus {
 
 .review-modal footer .secondary { border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink); }
 
+.settings-panel {
+  display: grid;
+  gap: 18px;
+  max-width: 980px;
+}
+
+.settings-intro,
+.settings-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.settings-intro { padding: 28px; background: var(--surface-soft); }
+.settings-intro h2 { margin: 6px 0 8px; font-size: 24px; }
+.settings-intro p:last-child,
+.settings-section-head p { margin: 0; color: var(--muted); line-height: 1.6; }
+.settings-section { padding: 22px; }
+.settings-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.settings-section h3 { margin: 0 0 5px; font-size: 16px; }
+
+.theme-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.theme-preset { display: grid; gap: 8px; min-height: 126px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); text-align: left; }
+.theme-preset:hover { border-color: var(--line-strong); background: var(--surface-soft); transform: translateY(-1px); }
+.theme-preset.selected { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+.theme-preset strong { font-size: 14px; }
+.theme-preset small { color: var(--muted); }
+.preset-swatch { display: flex; width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; }
+.preset-swatch i { display: block; width: 33.333%; height: 22px; }
+
+.custom-status { padding: 5px 8px; border-radius: 999px; background: var(--surface-soft); color: var(--muted); font-size: 12px; font-weight: 700; }
+.custom-status.active { background: var(--accent-soft); color: var(--accent-dark); }
+.color-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.color-controls label { gap: 7px; }
+.color-controls label > div { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
+.color-controls input[type="color"] { width: 32px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.color-controls code { color: var(--muted); font-size: 12px; }
+.density-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.density-options button { display: grid; gap: 5px; min-height: 74px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); text-align: left; }
+.density-options button:hover { border-color: var(--line-strong); background: var(--surface-soft); }
+.density-options button.selected { border-color: var(--accent); background: var(--accent-soft); }
+.density-options small { color: var(--muted); }
+
+.review-share-backdrop { position: fixed; z-index: 95; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(20, 28, 26, 0.48); backdrop-filter: blur(3px); animation: fade-in 260ms var(--ease) both; }
+.review-share-modal { display: grid; width: min(570px, 100%); max-height: calc(100vh - 48px); overflow: auto; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); box-shadow: 0 28px 80px rgba(18, 29, 26, 0.28); animation: modal-in 360ms var(--ease) both; }
+.review-share-modal header { display: flex; min-height: 66px; align-items: center; justify-content: space-between; padding: 0 18px 0 24px; border-bottom: 1px solid var(--line); }
+.review-share-modal header span { color: var(--muted); font-size: 12px; font-weight: 700; }
+.review-share-modal h2 { margin: 3px 0 0; font-size: 18px; }
+.review-share-modal img { display: block; width: min(100%, 460px); margin: 22px auto; border: 1px solid var(--line); }
+.review-share-modal footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line); }
+.review-share-modal footer button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 7px; background: var(--accent); color: white; font-weight: 760; }
+.review-share-modal footer .secondary { border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink); }
+
+:root[data-density="compact"] .primary-panel { padding: 16px; }
+:root[data-density="compact"] .task { padding-top: 9px; padding-bottom: 9px; }
+:root[data-density="compact"] .month-table-row { min-height: 46px; }
+
 .onboarding-tour {
   position: fixed;
   z-index: 90;
@@ -1924,6 +2018,16 @@ textarea:focus {
   .onboarding-content {
     min-height: 0;
     padding: 22px 20px;
+  }
+
+  .theme-presets,
+  .color-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-intro,
+  .settings-section {
+    padding: 18px;
   }
 
   .topbar {
