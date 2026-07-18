@@ -225,6 +225,12 @@ textarea:focus {
   color: var(--ink);
 }
 
+.login-form .recent-account-button {
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
 .review-actions .share-review {
   border: 1px solid var(--line);
   background: var(--surface-soft);
@@ -239,6 +245,12 @@ textarea:focus {
 
 .login-form .test-account-button:hover {
   border-color: var(--line-strong);
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
+.login-form .recent-account-button:hover {
+  border-color: var(--accent);
   background: var(--accent-soft);
   box-shadow: none;
 }

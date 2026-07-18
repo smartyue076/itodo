@@ -97,6 +97,17 @@ const defaultCustomTheme: CustomTheme = {
   density: "comfortable",
 };
 
+function newId() {
+  if (typeof crypto !== "undefined") {
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    if (typeof crypto.getRandomValues === "function") {
+      const bytes = crypto.getRandomValues(new Uint32Array(4));
+      return Array.from(bytes, (value) => value.toString(16)).join("-");
+    }
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function makeTask(input: {
   title: string;
   startDate: string;
@@ -109,7 +120,7 @@ function makeTask(input: {
   weight?: number;
 }): Task {
   return {
-    id: crypto.randomUUID(),
+    id: newId(),
     title: input.title,
     notes: input.notes || "",
     startDate: input.startDate,
@@ -239,7 +250,7 @@ function createTemplateReviews(): Review[] {
   const previousWeek = toKey(addDays(startOfWeek(today), -7));
   return [
     {
-      id: crypto.randomUUID(),
+      id: newId(),
       period: "week",
       anchor: currentWeek,
       wins: "完成了本周重点梳理，并留出了一段专注阅读时间。",
@@ -250,7 +261,7 @@ function createTemplateReviews(): Review[] {
       totalCount: 3,
     },
     {
-      id: crypto.randomUUID(),
+      id: newId(),
       period: "week",
       anchor: previousWeek,
       wins: "完成预算整理，清理了不再需要的订阅。",
@@ -422,6 +433,7 @@ function loadStore(): Record<string, UserData> {
 export default function Home() {
   const [username, setUsername] = useState("");
   const [activeUser, setActiveUser] = useState("");
+  const [savedUser, setSavedUser] = useState("");
   const [view, setView] = useState<View>("today");
   const [anchor, setAnchor] = useState(today);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -452,7 +464,7 @@ export default function Home() {
       setCustomTheme(defaultCustomTheme);
     }
     const last = localStorage.getItem("itodo.lastUser") || "";
-    if (last) signIn(last);
+    if (last && last !== demoAccountName) setSavedUser(last);
   }, []);
 
   useEffect(() => {
@@ -460,7 +472,7 @@ export default function Home() {
     const all = loadStore();
     all[activeUser] = { tasks, reviews, areas, onboardingCompleted };
     localStorage.setItem(storeKey, JSON.stringify(all));
-    localStorage.setItem("itodo.lastUser", activeUser);
+    if (activeUser !== demoAccountName) localStorage.setItem("itodo.lastUser", activeUser);
   }, [activeUser, tasks, reviews, areas, onboardingCompleted]);
 
   useEffect(() => {
@@ -505,6 +517,7 @@ export default function Home() {
     const nextAreas = normalizeAreas(nextTasks, data.areas);
     setActiveUser(cleanName);
     setUsername(cleanName);
+    if (!isDemoAccount) setSavedUser(cleanName);
     setTasks(nextTasks);
     setReviews(data.reviews);
     setAreas(nextAreas);
@@ -581,7 +594,7 @@ export default function Home() {
       : { startDate: draft.startDate, endDate: requestedEnd };
     const startDate = ownRange.startDate;
     const endDate = ownRange.endDate;
-    const parentId = editingId || crypto.randomUUID();
+    const parentId = editingId || newId();
     const childTasks = draft.children.filter((child) => child.title.trim()).map((child) =>
       {
         const childRange = boundRange(
@@ -656,7 +669,7 @@ export default function Home() {
       return;
     }
     const nextArea = {
-      id: `area-${crypto.randomUUID()}`,
+      id: `area-${newId()}`,
       name: cleanName,
       color: paletteColor(areas.length),
     };
@@ -721,7 +734,7 @@ export default function Home() {
     }
     setReviews((items) => [
       {
-        id: crypto.randomUUID(),
+        id: newId(),
         period,
         anchor: toKey(anchor),
         wins: reviewDraft.wins,
@@ -806,6 +819,7 @@ export default function Home() {
             <label htmlFor="username">用户名</label>
             <input id="username" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="例如 martin" />
             <button type="submit">登录本地账号</button>
+            {savedUser ? <button type="button" className="recent-account-button" onClick={() => signIn(savedUser)}>继续使用 {savedUser}</button> : null}
             <button type="button" className="test-account-button" onClick={() => signIn(demoAccountName)}>使用测试账号</button>
             <p className="test-account-copy">每次登录测试账号都会重置示例计划与引导。</p>
           </form>
@@ -853,7 +867,6 @@ export default function Home() {
           <button
             className="ghost"
             onClick={() => {
-              localStorage.removeItem("itodo.lastUser");
               setActiveUser("");
             }}
           >

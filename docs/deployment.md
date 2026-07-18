@@ -19,6 +19,24 @@ npm run dev
 
 开发服务器启动后，终端会输出访问地址，默认通常为 [http://localhost:3000](http://localhost:3000)。
 
+## 局域网访问
+
+需要让同一局域网内的成员访问网页时，在项目根目录执行：
+
+```bash
+npm run dev:lan
+```
+
+该命令会使用 Vinext 的 `--hostname 0.0.0.0` 参数监听所有网卡。
+
+然后查看本机局域网 IP，例如 macOS 可执行 `ipconfig getifaddr en0`，组员可在同一网络下访问：
+
+```text
+http://<你的局域网-IP>:3000
+```
+
+请确认 macOS 防火墙允许 Node.js 的入站连接。局域网模式只共享网页入口：iTodo 当前使用浏览器 LocalStorage，每个成员的账号和计划数据依然独立，不会自动同步或共享。
+
 ## 构建与验证
 
 ```bash
@@ -68,4 +86,3 @@ iTodo 当前将业务数据保存在用户浏览器的 LocalStorage 中，因此
 | `npm run start` | 使用生产模式本地运行 |
 | `npm test` | 构建并执行测试 |
 | `npm run lint` | 运行 ESLint 检查 |
-
