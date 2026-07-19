@@ -286,6 +286,11 @@ npm install
 npm run dev
 ```
 
+### 局域网运行
+```bash
+npm run dev:lan
+```
+
 ### 构建项目
 
 ```bash
