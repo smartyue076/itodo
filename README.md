@@ -355,8 +355,8 @@ iTodo 是一个基于现代 Web 技术栈开发的个人任务管理系统，通
 
 ## 贡献者
 
-| Pet | Name | Num |
-| --- | --- | --- |
-| <img src="docs/img/pet-1-transparent.png" alt="Pet 1" width="120" /> | Niby | 51285903105 |
-| <img src="docs/img/null-signal-transparent.png" alt="Null Signal Pet" width="120" /> | BD | 51285903101 |
-| <img src="docs/img/pet-2-transparent.png" alt="Pet 2" width="120" /> | Musebit | 51285903104 |
+| Pet | Name |
+| --- | --- |
+| <img src="docs/img/pet-1-transparent.png" alt="Pet 1" width="120" /> | Niby |
+| <img src="docs/img/null-signal-transparent.png" alt="Null Signal Pet" width="120" /> | BD |
+| <img src="docs/img/pet-2-transparent.png" alt="Pet 2" width="120" /> | Musebit |
